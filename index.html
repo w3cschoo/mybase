@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>悦听</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        li {
+            list-style: none;
+        }
+        h1 {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%);
+            width: 50px;
+            height: 50px;
+            font-size: 10px;
+            border-radius: 50%;
+            line-height: 50px;
+            text-align: center;
+            background-color: #fff;
+            color: aqua;
+            z-index: 2;
+            cursor: pointer;
+        }
+        h2 {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 50px;
+            font-family: 楷体;
+            font-size: 30px;
+            color: #fff;
+            line-height: 50px;
+            background-color: aqua;
+            padding-left: 20px;
+            z-index: 1;
+        }
+        input[type=text]:focus {
+            outline: none;
+        }
+        input[type=text] {
+            position: fixed;
+            top: 10px;
+            right: 50px;
+            width: 300px;
+            height: 30px;
+            border: none;
+            background-color: rgba(255, 127, 127, 0.4);
+            border-radius: 15px;
+            padding-left: 20px;
+            z-index: 1;
+        }
+        .ul {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            width: 300px;
+            height: 480px;
+            border-right: 1px solid pink;
+            overflow-x: hidden;
+        }
+        .ul li {
+            /* background-color: pink; */
+            color: red;
+            font-size: 18px;
+            font-family: 宋体;
+            margin-top: 5px;
+            /* border: 1px solid red; */
+            cursor: pointer;
+        }
+        audio {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translate(-50%);
+            width: 100%;
+            height: 50px;
+            border-radius: 0;
+            z-index: 1;
+        }
+        video {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translate(-50%);
+            z-index: 2;
+            width: 60%;
+        }
+        .img {
+            position: fixed;
+            top: 60px;
+            left: 400px;
+            width: 480px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        img {
+            width: 100%;
+        }
+        .says {
+            position: fixed;
+            top: 70px;
+            right: 10px;
+            width: 300px;
+            height: 480px;
+            /* background-color: pink; */
+            overflow-x: hidden;
+            border-left: 1px solid pink;
+        }
+        .says p {
+            font-size: 24px;
+            color: red;
+            padding-left: 10px;
+        }
+        .says ul {
+            margin-top: 20px;
+        }
+        .says ul li {
+            font-size: 20px;
+            font-family: 楷体;
+            color: #ccc;
+            padding-left: 5px;
+            padding-bottom: 20px;
+        }
+        .touxiang {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .says ul li .username {
+            color: aqua;
+            font-size: 20px;
+        }
+        .says .hot {
+            font-size: 16px;
+            color: #ccc;
+            padding-left: 1em;
+        }
+        .playing {
+            animation: Circle 20s infinite linear;
+        }
+        @keyframes Circle {
+            0% {
+                transform:rotate(0deg);
+                transform-origin: 50%;
+            }
+            100% {
+                transform:rotate(360deg);
+                transform-origin: 50%;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- 导包 -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h2>悦听</h2>
+    <div id="app">
+        <input type="text" placeholder="请输入歌名或歌手" @keyup.enter="search" v-model="music">
+        <ul class="ul">
+            <li v-for="(item,index) in songs" @click="openMusic(index)">
+                {{ index+1 }}. {{ item }}
+            </li>
+        </ul>
+        <audio :src="url" controls autoplay loop @play="play" @pause="pause"></audio>
+        <h1 @click="closeMv" v-show="mvShow">关闭MV</h1>
+        <video :src="mvurl" v-show="mvShow" controls></video>
+        <div class="img" :class="{playing:isPlaying}">
+            <img :src="src">
+        </div>
+        <div class="says">
+            <p>热门留言</p>
+            <ul>
+                <li v-for="(item,index) in says">
+                    <p class="username">
+                        <img :src="item.user.avatarUrl" class="touxiang">
+                        {{ item.user.nickname }}
+                    </p>
+                    <p class="hot">
+                        {{ item.content }}
+                    </p>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        var app = new Vue({
+            el:'#app',
+            data:{
+                music:'薛之谦',
+                songs:[],
+                ids:[],
+                url:'',
+                src:'',
+                says:[],
+                isPlaying:false,
+                mvId:[],
+                mvurl:'',
+                mvShow:false
+            },
+            methods:{
+                search:function(){
+                    // console.log('搜索');
+                    this.songs=[];
+                    that = this;
+                    axios.get('https://autumnfish.cn/search?keywords='+
+                    this.music)
+                    .then(function(respose){
+                        // console.log(respose);
+                        for(var i =0;i< respose.data.result.songs.length;i++){
+                            that.songs.push(respose.data.result.songs[i].name);
+                            that.ids.push(respose.data.result.songs[i].id);
+                            that.mvId.push(respose.data.result.songs[i].mvid);
+                        }
+                    }).catch(function(error){})
+                },
+                openMusic:function(index){
+                    this.says=[];
+                    that = this;
+                    axios.get('https://autumnfish.cn/song/url?id='+
+                    that.ids[index])
+                    .then(function(respose){
+                        // console.log(respose);
+                        that.url = respose.data.data[0].url;
+                        // console.log(that.url);
+                    }).catch(function(error){});
+                    axios.get('https://autumnfish.cn/song/detail?ids='+
+                    that.ids[index])
+                    .then(function(respose){
+                        // console.log(respose);
+                        that.src = respose.data.songs[0].al.picUrl;
+                        // console.log(that.src);
+                    }).catch(function(error){});
+                    axios.get('https://autumnfish.cn/comment/hot?type=0&id='+
+                    that.ids[index])
+                    .then(function(respose){
+                        // console.log(respose);
+                        for(i=0;i<respose.data.hotComments.length;i++){
+                            that.says.push(respose.data.hotComments[i]);
+                        }
+                    }).catch(function(error){});
+                    axios.get('https://autumnfish.cn/mv/url?id='+
+                    that.mvId[index])
+                    .then(function(respose){
+                        console.log(respose);
+                        that.mvurl = respose.data.data.url;
+                        if(that.mvurl==0){
+                            that.mvShow=false;
+                        }else{
+                            that.mvShow=true;
+                        }
+                    }).catch(function(error){});
+                },
+                play:function(){
+                    // console.log("播放");
+                    this.isPlaying=true;
+                },
+                pause:function(){
+                    // console.log("暂停");
+                    this.isPlaying=false;
+                },
+                closeMv:function(){
+                    this.mvShow=false;
+                }
+            }
+        })
+    </script>
+</body>
+</html>
